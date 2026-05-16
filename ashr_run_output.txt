@@ -1,0 +1,34 @@
+
+=== LINK FAILURE: RIP vs ASHR ===
+     protocol                                      routing_logic  path_before_failure   path_after_R2_R3_failure  convergence_rounds_after_failure  control_messages_after_failure  loops_detected_during_convergence  unreachable_routes_after_failure                                        recovery_method
+ RIP baseline                                     hop count only R1 -> R2 -> R3 -> R4 R1 -> R2 -> R6 -> R3 -> R4                                 3                              36                                  0                                 0                 wait for distance-vector reconvergence
+ASHR proposed dynamic latency/bandwidth/loss cost + backup route R1 -> R2 -> R3 -> R4 R1 -> R2 -> R6 -> R3 -> R4                                 1                               6                                  0                                 0 16 affected routes can use stored backup; 0 recomputed
+
+=== ASHR ROUTE QUALITY ===
+                             case  hops  latency_ms  min_bandwidth_mbps  packet_loss  ashr_cost
+      ASHR primary before failure     3         6.0               100.0     0.014925   0.750000
+ASHR stored backup before failure     4        17.0                60.0     0.049107   2.295455
+         ASHR route after failure     4        18.0                45.0     0.044329   2.181818
+
+=== SECURITY TESTS ===
+                           test accepted_by_ashr                                                                                              reason
+          Valid neighbor update             True                                                                                               valid
+           Replay old R2 update            False                                                                        replay/stale sequence number
+    Spoofed non-neighbor update            False                                                  sender is not a valid neighbor; unknown sender key
+          Tampered route hijack            False                                                                          authentication hash failed
+Same fake route in RIP baseline              N/A RIP baseline has no HMAC/sequence validation, so a lower false metric can be accepted in this model
+
+=== RIP 15-HOP LIMIT TEST ===
+     protocol               topology  total_source_destination_routes  unreachable_routes                                                                   reason
+ RIP baseline 20-router linear chain                              380                  20         RIP metric 16 means infinity, so routes longer than 15 hops fail
+ASHR proposed 20-router linear chain                              380                   0 Dijkstra path computation has no 15-hop routing limit in this simulation
+
+=== SCALABILITY RESULTS ===
+ routers  links failed_link  rip_convergence_rounds_after_failure  ashr_recomputed_routes_after_failure  rip_control_messages_after_failure  ashr_event_control_messages_after_failure  rip_unreachable_routes_after_failure  ashr_loops_detected_after_failure  rip_loops_detected_during_convergence  avg_rip_table_size_per_router  avg_ashr_table_size_per_router  ashr_compute_time_s  rip_convergence_time_s  ashr_estimated_pdr_percent  invalid_messages_detected_by_ashr
+      10     14       R3-R4                                     3                                     0                                  78                                          6                                     0                                  0                                      0                              9                            5.00             0.001201                0.000278                   94.986589                                  3
+      20     28     R10-R12                                     6                                     0                                 324                                          7                                     0                                  0                                     16                             19                            7.00             0.007095                0.002772                   92.087688                                  3
+      50     70     R26-R46                                    11                                     0                                1518                                          6                                     0                                  0                                    511                             49                           12.88             0.068290                0.038036                   91.872206                                  3
+     100    140     R68-R85                                    11                                     0                                3058                                          5                                     0                                  0                                    555                             99                           18.00             0.418853                0.176803                   89.242962                                  3
+     200    280    R78-R189                                    11                                     0                                6138                                          6                                     0                                  0                                   3806                            199                           26.80             2.284490                0.960270                   92.205608                                  3
+
+Saved CSVs, PNG graphs, and text report in: /mnt/data/ashr_results
