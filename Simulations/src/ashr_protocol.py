@@ -32,7 +32,15 @@ class ASHRProtocol:
     hierarchical area summaries, Dijkstra routing, and backup next hops.
     """
 
-    def __init__(self, graph: nx.Graph, theta: float = DEFAULT_THETA, security: SecurityManager | None = None):
+    def __init__(
+        self,
+        graph: nx.Graph,
+        theta: float = DEFAULT_THETA,
+        security: SecurityManager | None = None,
+        detection_delay_units: int = 1,
+        switch_delay_units: int = 1,
+        backup_loss_factor: float = 0.0,
+    ):
         self.graph = graph
         self.theta = theta
         self.routers = sorted(graph.nodes())
@@ -45,6 +53,11 @@ class ASHRProtocol:
         self.message_count = 0
         self.event_log: list[str] = []
         self.last_metric_ranges = compute_metric_ranges(self.graph)
+        # Realistic timing/modeling parameters (in abstract time units)
+        self.detection_delay_units = int(detection_delay_units)
+        self.switch_delay_units = int(switch_delay_units)
+        # Fraction of packets lost during a backup switch (informational)
+        self.backup_loss_factor = float(backup_loss_factor)
         self.detect_neighbors()
         self.rebuild_link_state_database(reason="initialization")
         self.compute_all_routes()
@@ -212,7 +225,13 @@ class ASHRProtocol:
             for a, b in zip(previous_backup["path"], previous_backup["path"][1:])
         )
         used_backup = affected and backup_valid
-        recovery_time_units = 0 if used_backup else 2
+
+        # Model realistic delays: detection + FIB switch when backup used,
+        # otherwise detection + control-plane recompute (modeled as 2 units).
+        if used_backup:
+            recovery_time_units = self.detection_delay_units + self.switch_delay_units
+        else:
+            recovery_time_units = self.detection_delay_units + 2
 
         self.detect_neighbors()
         self.rebuild_link_state_database(reason=f"failure {u}-{v}")
@@ -227,6 +246,10 @@ class ASHRProtocol:
             final_path = recomputed_route["path"]
             final_cost = recomputed_route["cost"]
             final_next_hop = recomputed_route["next_hop"]
+
+        self.event_log.append(
+            f"Failure {u}-{v}: affected={affected} used_backup={used_backup} recovery_time_units={recovery_time_units}"
+        )
 
         return {
             "failed_link": f"{u}-{v}",

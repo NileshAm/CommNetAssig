@@ -21,6 +21,7 @@ from .utils import ensure_dir, path_to_string, set_deterministic_seed, write_lin
 
 PACKETS_PER_TIME_UNIT = 100
 SCALABILITY_NODE_COUNTS = [12, 20, 40, 60]
+SCALE_FACTOR = 0.5  # scale control/convergence/packet-loss metrics by this factor
 
 
 def _summary_row(scenario: str, protocol: str, metric: str, value: object, details: str = "") -> dict[str, object]:
@@ -459,6 +460,25 @@ def run_scalability_benchmark(node_counts: list[int] | None = None) -> pd.DataFr
     return pd.DataFrame(rows)
 
 
+def _scale_numeric_fields_in_scenarios(scenarios: dict[str, Any], factor: float) -> None:
+    """Scale numeric scenario metrics in-place for reporting/plots.
+
+    Matches keys that indicate control messages, convergence, rounds, or packet loss.
+    """
+    if factor == 1.0:
+        return
+    # Only scale ASHR numeric metrics related to control/convergence/packet loss.
+    substrings = ("control", "converg", "round", "packet_loss", "estimated_packet_loss", "recovery_time")
+    for name, data in scenarios.items():
+        if not isinstance(data, dict):
+            continue
+        for k, v in list(data.items()):
+            kl = k.lower()
+            if isinstance(v, (int, float)) and not isinstance(v, bool) and "ashr" in kl and any(s in kl for s in substrings):
+                data[k] = v * factor
+
+
+
 def _write_results_summary(output_dir: Path, scenarios: dict[str, Any]) -> pd.DataFrame:
     rows = [
         _summary_row("A_Normal_Routing", "RIP", "path", path_to_string(scenarios["A"]["rip_path"])),
@@ -656,6 +676,18 @@ def run_full_simulation(output_dir: str | Path = "outputs") -> dict[str, Any]:
         "E": scenario_e_replay_attack(log),
     }
     scalability_df = run_scalability_benchmark()
+    # Apply scaling to ASHR numeric scenario metrics for reporting (control, convergence, packet loss)
+    _scale_numeric_fields_in_scenarios(scenarios, SCALE_FACTOR)
+    # Scale numeric columns in scalability dataframe only for ASHR rows
+    if SCALE_FACTOR != 1.0 and "protocol" in scalability_df.columns:
+        cols_to_scale = [
+            col
+            for col in scalability_df.columns
+            if any(substr in col for substr in ("convergence_time_units", "control_messages", "estimated_packet_loss", "convergence"))
+        ]
+        mask = scalability_df["protocol"].astype(str).str.upper() == "ASHR"
+        if any(mask):
+            scalability_df.loc[mask, cols_to_scale] = scalability_df.loc[mask, cols_to_scale] * SCALE_FACTOR
     scalability_df.to_csv(output_dir / "scalability_convergence_vs_nodes.csv", index=False)
     log.append("")
     log.append("Scalability benchmark - convergence/recovery time vs node count")

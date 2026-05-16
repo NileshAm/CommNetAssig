@@ -16,7 +16,7 @@ IS-IS-style after: R1 -> R2 -> R5 -> R6 -> ABR2 -> R8 -> R10; convergence time=2
 BGP-style after: R1 -> R2 -> R3 -> R6 -> ABR2 -> R8 -> R10; convergence time=6
 ASHR primary before: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
 ASHR backup before: R1 -> R4 -> R5 -> R6 -> ABR2 -> R8 -> R10
-ASHR after: R1 -> R4 -> R5 -> R6 -> ABR2 -> R8 -> R10; used_backup=True; recovery_time_units=0
+ASHR after: R1 -> R4 -> R5 -> R6 -> ABR2 -> R8 -> R10; used_backup=True; recovery_time_units=2
 
 Scenario C - Congestion-driven metric change on ABR1-ABR2
 RIP before/after path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 / R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
@@ -42,19 +42,19 @@ RIP nodes=12: time=2, control_rebuild=2, failed_link=A1R1-A1R2
 OSPF nodes=12: time=3, control_rebuild=3, failed_link=A1R1-A1R2
 IS-IS nodes=12: time=3, control_rebuild=3, failed_link=A1R1-A1R2
 BGP nodes=12: time=7, control_rebuild=7, failed_link=A1R1-A1R2
-ASHR nodes=12: time=0, control_rebuild=2, failed_link=A1R1-A1R2
+ASHR nodes=12: time=1, control_rebuild=2, failed_link=A1R1-A1R2
 RIP nodes=20: time=9, control_rebuild=9, failed_link=A1R1-A1R5
 OSPF nodes=20: time=4, control_rebuild=4, failed_link=A1R1-A1R5
 IS-IS nodes=20: time=3, control_rebuild=3, failed_link=A1R1-A1R5
 BGP nodes=20: time=7, control_rebuild=7, failed_link=A1R1-A1R5
-ASHR nodes=20: time=0, control_rebuild=2, failed_link=A1R1-A1R5
+ASHR nodes=20: time=1, control_rebuild=2, failed_link=A1R1-A1R5
 RIP nodes=40: time=14, control_rebuild=14, failed_link=A1R1-A1R10
 OSPF nodes=40: time=6, control_rebuild=6, failed_link=A1R1-A1R10
 IS-IS nodes=40: time=5, control_rebuild=5, failed_link=A1R1-A1R10
 BGP nodes=40: time=8, control_rebuild=8, failed_link=A1R1-A1R10
-ASHR nodes=40: time=0, control_rebuild=3, failed_link=A1R1-A1R10
+ASHR nodes=40: time=1, control_rebuild=3, failed_link=A1R1-A1R10
 RIP nodes=60: time=16, control_rebuild=16, failed_link=A1R1-A1R15
 OSPF nodes=60: time=8, control_rebuild=8, failed_link=A1R1-A1R15
 IS-IS nodes=60: time=6, control_rebuild=6, failed_link=A1R1-A1R15
 BGP nodes=60: time=9, control_rebuild=9, failed_link=A1R1-A1R15
-ASHR nodes=60: time=0, control_rebuild=4, failed_link=A1R1-A1R15
+ASHR nodes=60: time=1, control_rebuild=4, failed_link=A1R1-A1R15

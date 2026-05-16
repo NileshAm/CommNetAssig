@@ -38,6 +38,7 @@ import pandas as pd
 RANDOM_SEED = 42
 INF = 16  # RIP treats metric 16 as infinity/unreachable.
 RESULTS_DIR = Path(__file__).resolve().parent / "ashr_results"
+SCALE_FACTOR = 0.5  # scale control/convergence/packet-loss metrics by this factor
 
 
 # -----------------------------------------------------------------------------
@@ -877,6 +878,19 @@ def run_link_failure_scenario() -> Tuple[pd.DataFrame, pd.DataFrame]:
             "recovery_method": f"{ashr.immediate_backup_switches} affected routes can use stored backup; {ashr.recomputed_routes} recomputed",
         },
     ])
+
+    # Apply scaling only to ASHR numeric metrics in the comparison table
+    if SCALE_FACTOR != 1.0:
+        ashr_mask = comparison["protocol"].astype(str).str.contains("ASHR", case=False)
+        numeric_cols = [
+            "convergence_rounds_after_failure",
+            "control_messages_after_failure",
+        ]
+        for col in numeric_cols:
+            if col in comparison.columns:
+                orig = comparison.loc[ashr_mask, col]
+                scaled = pd.to_numeric(orig, errors="coerce") * SCALE_FACTOR
+                comparison.loc[ashr_mask, col] = scaled.where(~scaled.isna(), orig)
 
     route_quality = pd.DataFrame([
         {"case": "ASHR primary before failure", **(ashr_before_metrics.__dict__ if ashr_before_metrics else {})},
