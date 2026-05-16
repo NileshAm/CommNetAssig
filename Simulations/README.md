@@ -12,7 +12,7 @@ ASHR combines four main ideas:
 - A normalized adaptive composite metric:
 
 ```text
-Cij = 0.20H' + 0.30L' + 0.25B' + 0.15P' + 0.10Q'
+Cij = 0.20H' + 0.25L' + 0.20B' + 0.15P' + 0.10Q' + 0.10E'
 ```
 
 - Event-driven link-state updates with damping, where updates trigger only when the cost change exceeds `theta = 0.15`.
@@ -123,7 +123,7 @@ Scenario B: Link failure
 
 Scenario C: Congestion change
 
-- Raises congestion, latency, and packet loss on `ABR1-ABR2` to model a congested backbone link.
+- Raises congestion, latency, packet loss, and link error rate on `ABR1-ABR2` to model a degraded backbone link.
 - RIP, OSPF-style, IS-IS-style, and BGP-style baselines keep the same route because their simplified metrics ignore dynamic congestion.
 - ASHR triggers an event-driven update and chooses a lower adaptive-cost route.
 
@@ -154,10 +154,13 @@ Scalability benchmark: Convergence time vs nodes
 - `outputs/control_overhead_comparison.png`: Control messages during failure handling across all protocols.
 - `outputs/packet_loss_comparison.png`: Estimated packet loss during failure across all protocols.
 - `outputs/path_cost_comparison.png`: Protocol-specific path cost comparison.
+- `outputs/congestion_before_after_path.png`: ASHR before/after path diagram for the congestion scenario.
 - `outputs/security_attack_comparison.png`: Whether each attack was accepted.
 - `outputs/routing_tables_before_after.csv`: Before/after paths for failure and congestion scenarios.
 - `outputs/scalability_convergence_vs_nodes.csv`: Convergence/recovery benchmark as node count grows.
 - `outputs/scalability_convergence_vs_nodes.png`: Scalability graph plotting convergence/recovery time against router count.
+- `outputs/control_messages_vs_nodes.png`: Control-message overhead as generated topology size grows.
+- `outputs/scalable_topology_examples.png`: Example 12-, 40-, and 60-router hierarchical generated topologies.
 
 ## Current Generated Results
 
@@ -167,13 +170,13 @@ From the latest run:
 - Normal OSPF-style path cost: `27.805556`.
 - Normal IS-IS-style path metric: `8.700000`.
 - Normal BGP-style AS-path length: `6`.
-- Normal ASHR path: `R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10`, cost `2.229737`.
-- Link failure recovery time: RIP `5`, OSPF-style `2`, IS-IS-style `2`, BGP-style `6`, ASHR `0`.
-- Estimated packet loss during failure: RIP `500`, OSPF-style `200`, IS-IS-style `200`, BGP-style `600`, ASHR `0`.
+- Normal ASHR path: `R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10`, cost `2.176907`.
+- Link failure recovery time: RIP `5`, OSPF-style `2`, IS-IS-style `2`, BGP-style `6`, ASHR `1.0`.
+- Estimated packet loss during failure: RIP `500`, OSPF-style `200`, IS-IS-style `200`, BGP-style `600`, ASHR `100.0`.
 - Congestion change: RIP, OSPF-style, IS-IS-style, and BGP-style paths did not change; ASHR triggered a metric update.
 - Fake update attack: RIP, OSPF-style, IS-IS-style, and BGP-style baselines accepted it; ASHR rejected spoofed and fake low-cost updates.
 - Replay attack: ASHR rejected the replayed message.
-- Scalability at 60 routers: RIP `16`, OSPF-style `8`, IS-IS-style `6`, BGP-style `9`, ASHR `0` modeled recovery time units. ASHR's control-plane rebuild continues in the background with `4` modeled units.
+- Scalability at 60 routers: RIP `16`, OSPF-style `8`, IS-IS-style `6`, BGP-style `9`, ASHR `1.147672` modeled recovery time units. ASHR's control-plane rebuild continues in the background with `4` modeled units.
 
 ## Code Mapping to Requirements
 

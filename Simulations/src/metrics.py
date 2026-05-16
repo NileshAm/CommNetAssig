@@ -12,10 +12,11 @@ from .topology import active_edges
 
 WEIGHTS = {
     "hop": 0.20,
-    "latency": 0.30,
-    "bandwidth": 0.25,
+    "latency": 0.25,
+    "bandwidth": 0.20,
     "packet_loss": 0.15,
     "congestion": 0.10,
+    "error_rate": 0.10,
 }
 
 DEFAULT_THETA = 0.15
@@ -32,6 +33,8 @@ class MetricRanges:
     max_packet_loss: float
     min_congestion: float
     max_congestion: float
+    min_error_rate: float = 0.0
+    max_error_rate: float = 1.0
 
 
 def _bounded(value: float) -> float:
@@ -47,13 +50,14 @@ def _normalize(value: float, minimum: float, maximum: float) -> float:
 def compute_metric_ranges(graph: nx.Graph) -> MetricRanges:
     edges = list(active_edges(graph))
     if not edges:
-        return MetricRanges(1, 0, 1, 0, 1, 0, 1, 0, 1)
+        return MetricRanges(1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1)
 
     hop_values = [float(data.get("hop_cost", 1)) for _, _, data in edges]
     latency_values = [float(data["latency_ms"]) for _, _, data in edges]
     inverse_bandwidth_values = [1.0 / max(float(data["bandwidth_mbps"]), 0.000001) for _, _, data in edges]
     packet_loss_values = [float(data["packet_loss"]) for _, _, data in edges]
     congestion_values = [float(data["congestion"]) for _, _, data in edges]
+    error_rate_values = [float(data.get("error_rate", 0.0)) for _, _, data in edges]
 
     return MetricRanges(
         max_hop=max(max(hop_values), 1.0),
@@ -65,6 +69,8 @@ def compute_metric_ranges(graph: nx.Graph) -> MetricRanges:
         max_packet_loss=max(packet_loss_values),
         min_congestion=min(congestion_values),
         max_congestion=max(congestion_values),
+        min_error_rate=min(error_rate_values),
+        max_error_rate=max(error_rate_values),
     )
 
 
@@ -80,19 +86,21 @@ def normalized_components(link_data: Mapping[str, float], ranges: MetricRanges) 
     )
     packet_loss = _normalize(float(link_data["packet_loss"]), ranges.min_packet_loss, ranges.max_packet_loss)
     congestion = _normalize(float(link_data["congestion"]), ranges.min_congestion, ranges.max_congestion)
+    error_rate = _normalize(float(link_data.get("error_rate", 0.0)), ranges.min_error_rate, ranges.max_error_rate)
     return {
         "hop": hop,
         "latency": latency,
         "bandwidth": bandwidth,
         "packet_loss": packet_loss,
         "congestion": congestion,
+        "error_rate": error_rate,
     }
 
 
 def adaptive_link_cost(link_data: Mapping[str, float], ranges: MetricRanges) -> float:
     """Compute ASHR composite cost.
 
-    Cij = 0.20H' + 0.30L' + 0.25B' + 0.15P' + 0.10Q'
+    Cij = 0.20H' + 0.25L' + 0.20B' + 0.15P' + 0.10Q' + 0.10E'
     """
     components = normalized_components(link_data, ranges)
     cost = sum(WEIGHTS[name] * components[name] for name in WEIGHTS)

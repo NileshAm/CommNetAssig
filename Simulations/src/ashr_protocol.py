@@ -7,7 +7,14 @@ from typing import Any
 
 import networkx as nx
 
-from .metrics import DEFAULT_THETA, adaptive_link_cost, compute_metric_ranges, path_cost, should_trigger_update
+from .metrics import (
+    DEFAULT_THETA,
+    adaptive_link_cost,
+    compute_metric_ranges,
+    normalized_components,
+    path_cost,
+    should_trigger_update,
+)
 from .security import ASHRMessage, SecurityManager, ValidationResult
 from .topology import fail_link, router_area
 
@@ -117,6 +124,7 @@ class ASHRProtocol:
                     "bandwidth_mbps": data["bandwidth_mbps"],
                     "packet_loss": data["packet_loss"],
                     "congestion": data["congestion"],
+                    "error_rate": data.get("error_rate", 0.0),
                     "failed": data["failed"],
                 }
             )
@@ -270,12 +278,13 @@ class ASHRProtocol:
             raise ValueError(f"Cannot update missing link {u}-{v}")
 
         old_data = dict(self.graph[u][v])
-        old_cost = adaptive_link_cost(old_data, compute_metric_ranges(self.graph))
         for key, value in attrs.items():
             if key not in self.graph[u][v]:
                 raise ValueError(f"Unknown link attribute {key}")
             self.graph[u][v][key] = value
-        new_cost = adaptive_link_cost(self.graph[u][v], compute_metric_ranges(self.graph))
+        comparison_ranges = compute_metric_ranges(self.graph)
+        old_cost = adaptive_link_cost(old_data, comparison_ranges)
+        new_cost = adaptive_link_cost(self.graph[u][v], comparison_ranges)
         triggered = should_trigger_update(old_cost, new_cost, theta=self.theta)
         update_messages = 0
         if triggered:
@@ -289,9 +298,15 @@ class ASHRProtocol:
             "link": f"{u}-{v}",
             "old_cost": old_cost,
             "new_cost": new_cost,
+            "old_components": normalized_components(old_data, comparison_ranges),
+            "new_components": normalized_components(self.graph[u][v], comparison_ranges),
             "triggered_update": triggered,
             "control_messages": update_messages,
         }
+
+    def update_ashr_costs(self, u: str, v: str, **attrs: float) -> dict[str, Any]:
+        """Compatibility wrapper for updating ASHR adaptive link attributes."""
+        return self.update_link_metrics(u, v, **attrs)
 
     def process_incoming_message(self, receiver: str, message: ASHRMessage) -> ValidationResult:
         validation = self.security.validate_message(receiver, message)

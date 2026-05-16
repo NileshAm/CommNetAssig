@@ -20,8 +20,11 @@ def _add_link(
     bandwidth_mbps: float,
     packet_loss: float,
     congestion: float,
+    error_rate: float | None = None,
     hop_cost: int = 1,
 ) -> None:
+    if error_rate is None:
+        error_rate = float(packet_loss) * 0.5
     graph.add_edge(
         u,
         v,
@@ -29,6 +32,7 @@ def _add_link(
         bandwidth_mbps=float(bandwidth_mbps),
         packet_loss=float(packet_loss),
         congestion=float(congestion),
+        error_rate=float(error_rate),
         failed=False,
         hop_cost=int(hop_cost),
     )

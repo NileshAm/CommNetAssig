@@ -13,7 +13,15 @@ from .bgp_baseline import BGPBaseline
 from .isis_baseline import ISISBaseline
 from .metrics import compute_metric_ranges, path_cost
 from .ospf_baseline import OSPFBaseline
-from .plotting import plot_bar, plot_path_cost, plot_scalability_convergence, plot_topology
+from .plotting import (
+    plot_bar,
+    plot_congestion_before_after_path,
+    plot_control_messages_vs_nodes,
+    plot_path_cost,
+    plot_scalability_convergence,
+    plot_scalable_topology_examples,
+    plot_topology,
+)
 from .rip_baseline import RIPBaseline
 from .topology import create_hierarchical_topology, create_scalable_hierarchical_topology
 from .utils import ensure_dir, path_to_string, set_deterministic_seed, write_lines
@@ -201,6 +209,8 @@ def scenario_c_congestion_change(log: list[str]) -> dict[str, Any]:
     # RIP ignores all non-hop metrics, so the path remains unchanged.
     rip_graph["ABR1"]["ABR2"]["congestion"] = 0.95
     rip_graph["ABR1"]["ABR2"]["latency_ms"] = 55
+    rip_graph["ABR1"]["ABR2"]["packet_loss"] = 0.015
+    rip_graph["ABR1"]["ABR2"]["error_rate"] = 0.012
     rip_after_path = rip.get_path("R1", "R10")
     rip_after_hops = rip.get_distance("R1", "R10")
 
@@ -208,7 +218,14 @@ def scenario_c_congestion_change(log: list[str]) -> dict[str, Any]:
     ospf = OSPFBaseline(ospf_graph)
     ospf_before_path = ospf.get_path("R1", "R10")
     ospf_before_cost = ospf.get_cost("R1", "R10")
-    ospf_update = ospf.update_link_metrics("ABR1", "ABR2", congestion=0.95, latency_ms=55, packet_loss=0.015)
+    ospf_update = ospf.update_link_metrics(
+        "ABR1",
+        "ABR2",
+        congestion=0.95,
+        latency_ms=55,
+        packet_loss=0.015,
+        error_rate=0.012,
+    )
     ospf_after_path = ospf.get_path("R1", "R10")
     ospf_after_cost = ospf.get_cost("R1", "R10")
 
@@ -216,7 +233,14 @@ def scenario_c_congestion_change(log: list[str]) -> dict[str, Any]:
     isis = ISISBaseline(isis_graph)
     isis_before_path = isis.get_path("R1", "R10")
     isis_before_cost = isis.get_cost("R1", "R10")
-    isis_update = isis.update_link_metrics("ABR1", "ABR2", congestion=0.95, latency_ms=55, packet_loss=0.015)
+    isis_update = isis.update_link_metrics(
+        "ABR1",
+        "ABR2",
+        congestion=0.95,
+        latency_ms=55,
+        packet_loss=0.015,
+        error_rate=0.012,
+    )
     isis_after_path = isis.get_path("R1", "R10")
     isis_after_cost = isis.get_cost("R1", "R10")
 
@@ -224,7 +248,14 @@ def scenario_c_congestion_change(log: list[str]) -> dict[str, Any]:
     bgp = BGPBaseline(bgp_graph)
     bgp_before_path = bgp.get_path("R1", "R10")
     bgp_before_cost = bgp.get_cost("R1", "R10")
-    bgp_update = bgp.update_link_metrics("ABR1", "ABR2", congestion=0.95, latency_ms=55, packet_loss=0.015)
+    bgp_update = bgp.update_link_metrics(
+        "ABR1",
+        "ABR2",
+        congestion=0.95,
+        latency_ms=55,
+        packet_loss=0.015,
+        error_rate=0.012,
+    )
     bgp_after_path = bgp.get_path("R1", "R10")
     bgp_after_cost = bgp.get_cost("R1", "R10")
 
@@ -237,6 +268,7 @@ def scenario_c_congestion_change(log: list[str]) -> dict[str, Any]:
         congestion=0.95,
         latency_ms=55,
         packet_loss=0.015,
+        error_rate=0.012,
     )
     after_route = dict(ashr.get_route("R1", "R10"))
 
@@ -282,6 +314,8 @@ def scenario_c_congestion_change(log: list[str]) -> dict[str, Any]:
         "ashr_update_triggered": update["triggered_update"],
         "metric_old_cost": update["old_cost"],
         "metric_new_cost": update["new_cost"],
+        "metric_old_components": update["old_components"],
+        "metric_new_components": update["new_components"],
         "ashr_control_messages": update["control_messages"],
     }
 
@@ -526,6 +560,9 @@ def _write_results_summary(output_dir: Path, scenarios: dict[str, Any]) -> pd.Da
         _summary_row("C_Congestion_Change", "IS-IS", "path_changed", scenarios["C"]["isis_before_path"] != scenarios["C"]["isis_after_path"]),
         _summary_row("C_Congestion_Change", "BGP", "path_changed", scenarios["C"]["bgp_before_path"] != scenarios["C"]["bgp_after_path"]),
         _summary_row("C_Congestion_Change", "ASHR", "metric_update_triggered", scenarios["C"]["ashr_update_triggered"]),
+        _summary_row("C_Congestion_Change", "ASHR", "updated_link_old_cost", round(scenarios["C"]["metric_old_cost"], 6)),
+        _summary_row("C_Congestion_Change", "ASHR", "updated_link_new_cost", round(scenarios["C"]["metric_new_cost"], 6)),
+        _summary_row("C_Congestion_Change", "ASHR", "updated_link_new_error_component", round(scenarios["C"]["metric_new_components"]["error_rate"], 6)),
         _summary_row("C_Congestion_Change", "OSPF", "after_path_cost", round(scenarios["C"]["ospf_after_cost"], 6)),
         _summary_row("C_Congestion_Change", "IS-IS", "after_path_cost", round(scenarios["C"]["isis_after_cost"], 6)),
         _summary_row("C_Congestion_Change", "BGP", "after_path_cost", scenarios["C"]["bgp_after_cost"]),
@@ -663,6 +700,14 @@ def _generate_plots(output_dir: Path, scenarios: dict[str, Any], scalability_df:
         )
     )
     paths.append(
+        plot_congestion_before_after_path(
+            create_hierarchical_topology(),
+            scenarios["C"]["ashr_before_path"],
+            scenarios["C"]["ashr_after_path"],
+            output_dir,
+        )
+    )
+    paths.append(
         plot_bar(
             [
                 {"check": "RIP fake\nroute", "value": int(scenarios["D"]["rip_accepted"])},
@@ -682,6 +727,13 @@ def _generate_plots(output_dir: Path, scenarios: dict[str, Any], scalability_df:
         )
     )
     paths.append(plot_scalability_convergence(scalability_df.to_dict("records"), output_dir))
+    paths.append(plot_control_messages_vs_nodes(scalability_df.to_dict("records"), output_dir))
+    paths.append(
+        plot_scalable_topology_examples(
+            [create_scalable_hierarchical_topology(count) for count in (12, 40, 60)],
+            output_dir,
+        )
+    )
     return paths
 
 

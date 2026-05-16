@@ -6,7 +6,7 @@ RIP path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 (hops=6)
 OSPF-style path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 (static cost=27.8056)
 IS-IS-style path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 (configured metric=8.7000)
 BGP-style path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 (AS-path length=6)
-ASHR path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 (cost=2.2297)
+ASHR path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 (cost=2.1769)
 
 Scenario B - Link failure R3-ABR1
 RIP before: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
@@ -23,7 +23,7 @@ RIP before/after path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 / R1 -> R2 ->
 OSPF-style before/after path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 / R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
 IS-IS-style before/after path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 / R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
 BGP-style before/after path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 / R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
-ASHR before: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 cost=2.2297; after: R1 -> R2 -> R3 -> R6 -> ABR2 -> R8 -> R10 cost=2.1031; triggered_update=True
+ASHR before: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 cost=2.1769; after: R1 -> R2 -> R3 -> R6 -> ABR2 -> R8 -> R10 cost=1.9415; triggered_update=True
 
 Scenario D - Fake low-cost update attack
 RIP accepted=True; before_distance=6; after_distance=1; after_path=R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10

@@ -25,6 +25,7 @@ Each link stores:
 - `bandwidth_mbps`
 - `packet_loss`
 - `congestion`
+- `error_rate`
 - `failed`
 - `hop_cost`
 
@@ -100,7 +101,7 @@ Scenario B: Link failure
 Scenario C: Congestion change
 
 - Increase congestion on `ABR1-ABR2`.
-- Model congestion side effects by increasing latency and packet loss on the same link.
+- Model congestion side effects by increasing latency, packet loss, and link error rate on the same link.
 - Compare baseline path stability with ASHR adaptive recomputation.
 
 Scenario D: Fake routing update attack
@@ -146,7 +147,7 @@ Path cost:
 - OSPF-style: static bandwidth-derived path cost.
 - IS-IS-style: configured static path metric.
 - BGP-style: AS-path length.
-- ASHR: sum of normalized adaptive link costs.
+- ASHR: sum of normalized adaptive link costs, including hop cost, latency, inverse bandwidth, packet loss, congestion, and error rate.
 
 Attack accepted/rejected:
 

@@ -52,3 +52,30 @@ def test_lower_bandwidth_increases_cost():
     low_bandwidth = dict(high_bandwidth, bandwidth_mbps=10)
 
     assert adaptive_link_cost(low_bandwidth, ranges) > adaptive_link_cost(high_bandwidth, ranges)
+
+
+def test_higher_error_rate_increases_cost():
+    ranges = MetricRanges(
+        max_hop=1,
+        min_latency=0,
+        max_latency=100,
+        min_inverse_bandwidth=1 / 1000,
+        max_inverse_bandwidth=1 / 10,
+        min_packet_loss=0,
+        max_packet_loss=0.1,
+        min_congestion=0,
+        max_congestion=1,
+        min_error_rate=0,
+        max_error_rate=0.1,
+    )
+    base = {
+        "hop_cost": 1,
+        "latency_ms": 10,
+        "bandwidth_mbps": 100,
+        "packet_loss": 0.01,
+        "congestion": 0.1,
+        "error_rate": 0.001,
+    }
+    noisy = dict(base, error_rate=0.06)
+
+    assert adaptive_link_cost(noisy, ranges) > adaptive_link_cost(base, ranges)
