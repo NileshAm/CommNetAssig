@@ -81,6 +81,96 @@ def create_hierarchical_topology() -> nx.Graph:
     return graph
 
 
+def create_scalable_hierarchical_topology(node_count: int) -> nx.Graph:
+    """Create a larger deterministic hierarchical topology for scalability tests.
+
+    ``node_count`` includes the two backbone ABRs. The generated topology keeps
+    the same ASHR idea as the assignment topology: two areas connected through a
+    backbone, plus a redundant source-side exit so backup next-hop behavior can
+    be tested as the network grows.
+    """
+    if node_count < 12:
+        raise ValueError("Scalable topology requires at least 12 routers")
+
+    area_1_count = max(5, (node_count - 2) // 2)
+    area_2_count = node_count - 2 - area_1_count
+    if area_2_count < 5:
+        area_2_count = 5
+        area_1_count = node_count - 2 - area_2_count
+
+    graph = nx.Graph(name=f"ASHR scalable topology ({node_count} routers)")
+    area_1 = [f"A1R{i}" for i in range(1, area_1_count + 1)]
+    area_2 = [f"A2R{i}" for i in range(1, area_2_count + 1)]
+
+    for router in area_1:
+        graph.add_node(router, area_id=1, role="internal")
+    graph.add_node("ABR1", area_id=0, role="area_border")
+    graph.add_node("ABR2", area_id=0, role="area_border")
+    for router in area_2:
+        graph.add_node(router, area_id=2, role="internal")
+
+    for index, (u, v) in enumerate(zip(area_1, area_1[1:]), start=1):
+        _add_link(
+            graph,
+            u,
+            v,
+            latency_ms=3 + (index % 3),
+            bandwidth_mbps=220,
+            packet_loss=0.001,
+            congestion=0.05,
+        )
+    _add_link(graph, area_1[-1], "ABR1", latency_ms=4, bandwidth_mbps=220, packet_loss=0.001, congestion=0.05)
+
+    # Redundant source-side route into ABR2. It is deliberately a little less
+    # attractive than the primary chain but remains available after first-hop
+    # failure.
+    midpoint_1 = area_1[max(2, area_1_count // 2)]
+    _add_link(graph, area_1[0], midpoint_1, latency_ms=11, bandwidth_mbps=120, packet_loss=0.003, congestion=0.16)
+    _add_link(graph, midpoint_1, "ABR2", latency_ms=8, bandwidth_mbps=140, packet_loss=0.002, congestion=0.12)
+    for index in range(2, area_1_count - 1, 4):
+        _add_link(
+            graph,
+            area_1[index],
+            area_1[min(index + 2, area_1_count - 1)],
+            latency_ms=10,
+            bandwidth_mbps=110,
+            packet_loss=0.003,
+            congestion=0.18,
+        )
+
+    _add_link(graph, "ABR1", "ABR2", latency_ms=3, bandwidth_mbps=1000, packet_loss=0.0005, congestion=0.03)
+
+    _add_link(graph, "ABR2", area_2[0], latency_ms=4, bandwidth_mbps=220, packet_loss=0.001, congestion=0.05)
+    for index, (u, v) in enumerate(zip(area_2, area_2[1:]), start=1):
+        _add_link(
+            graph,
+            u,
+            v,
+            latency_ms=3 + (index % 3),
+            bandwidth_mbps=210,
+            packet_loss=0.001,
+            congestion=0.05,
+        )
+
+    midpoint_2 = area_2[max(2, area_2_count // 2)]
+    _add_link(graph, "ABR1", midpoint_2, latency_ms=12, bandwidth_mbps=120, packet_loss=0.003, congestion=0.15)
+    _add_link(graph, midpoint_2, area_2[-1], latency_ms=8, bandwidth_mbps=130, packet_loss=0.002, congestion=0.12)
+    for index in range(1, area_2_count - 2, 5):
+        _add_link(
+            graph,
+            area_2[index],
+            area_2[min(index + 2, area_2_count - 1)],
+            latency_ms=9,
+            bandwidth_mbps=120,
+            packet_loss=0.002,
+            congestion=0.14,
+        )
+
+    graph.graph["source"] = area_1[0]
+    graph.graph["destination"] = area_2[-1]
+    return graph
+
+
 def active_edges(graph: nx.Graph) -> Iterable[tuple[str, str, dict]]:
     for u, v, data in graph.edges(data=True):
         if not data.get("failed", False):

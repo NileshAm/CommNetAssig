@@ -116,3 +116,34 @@ def plot_path_cost(rows: list[dict[str, object]], output_dir: str | Path) -> Pat
         output_dir=output_dir,
         filename="path_cost_comparison.png",
     )
+
+
+def plot_scalability_convergence(rows: list[dict[str, object]], output_dir: str | Path) -> Path:
+    output_dir = ensure_dir(output_dir)
+    path = output_dir / "scalability_convergence_vs_nodes.png"
+    df = pd.DataFrame(rows)
+    fig, ax = plt.subplots(figsize=(8.8, 5.2))
+    colors = {
+        "RIP": "#4c78a8",
+        "OSPF": "#f58518",
+        "IS-IS": "#54a24b",
+        "BGP": "#e45756",
+        "ASHR": "#72b7b2",
+    }
+    for protocol, group in df.groupby("protocol"):
+        group = group.sort_values("node_count")
+        ax.plot(
+            group["node_count"],
+            group["convergence_time_units"],
+            marker="o",
+            linewidth=2,
+            label=protocol,
+            color=colors.get(protocol),
+        )
+    ax.set_title("Scalability Benchmark: Convergence Time vs Node Count")
+    ax.set_xlabel("Number of routers")
+    ax.set_ylabel("Modeled convergence / recovery time units")
+    ax.grid(alpha=0.25)
+    ax.legend()
+    _save(fig, path)
+    return path

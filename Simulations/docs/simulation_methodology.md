@@ -113,6 +113,14 @@ Scenario E: Replay attack
 - Resend an old ASHR LSA.
 - Check sequence-number replay protection.
 
+Scalability benchmark: Convergence time vs nodes
+
+- Generate deterministic hierarchical topologies with 12, 20, 40, and 60 routers.
+- Compute the ASHR primary path between the generated source and destination.
+- Fail the primary first-hop link.
+- Measure or model the recovery/convergence time for RIP, OSPF-style, IS-IS-style, BGP-style, and ASHR.
+- Save the result in `outputs/scalability_convergence_vs_nodes.csv` and plot it in `outputs/scalability_convergence_vs_nodes.png`.
+
 ## Metrics Measured
 
 Convergence time:
@@ -145,6 +153,14 @@ Attack accepted/rejected:
 - `1` means the attack was accepted.
 - `0` means the attack was rejected.
 
+Scalability convergence:
+
+- RIP uses actual distance-vector update rounds from the simulator.
+- OSPF-style uses a deterministic flood plus SPF work model based on node and edge count.
+- IS-IS-style uses a deterministic hierarchical SPF work model based on node and edge count.
+- BGP-style uses a deterministic path-vector withdrawal and re-advertisement model.
+- ASHR reports immediate backup next-hop recovery time, while the CSV separately records control-plane rebuild units.
+
 ## Interpreting Results
 
 Lower convergence/recovery time is better because it means less disruption after failure.
@@ -156,3 +172,5 @@ Lower control overhead is better when routing quality is preserved, because fewe
 Lower ASHR path cost means the selected path is better under the normalized composite metric. It should not be directly compared as the same physical unit as RIP hop count.
 
 Security results should show the simplified baselines accepting fake low-cost route/path information and ASHR rejecting spoofed, fake-cost, and replayed messages.
+
+The scalability graph should be interpreted as a protocol behavior model, not a CPU benchmarking graph. It shows how recovery/convergence behavior changes with topology size under the assumptions encoded in the simulator.

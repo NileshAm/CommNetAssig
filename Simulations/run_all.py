@@ -13,6 +13,9 @@ def main() -> int:
     output_dir = project_root / "outputs"
     result = run_full_simulation(output_dir)
     scenarios = result["scenarios"]
+    scalability = result["scalability"]
+    largest_node_count = int(scalability["node_count"].max())
+    largest_rows = scalability[scalability["node_count"] == largest_node_count]
 
     print("ASHR simulation completed.")
     print(f"Outputs written to: {output_dir}")
@@ -42,6 +45,13 @@ def main() -> int:
     )
     print(f"- Scenario D ASHR rejected fake low cost: {not scenarios['D']['ashr_low_cost_accepted']}")
     print(f"- Scenario E ASHR rejected replay: {not scenarios['E']['replay_accepted']}")
+    print(
+        f"- Scalability benchmark largest topology ({largest_node_count} nodes): "
+        + ", ".join(
+            f"{row.protocol}={int(row.convergence_time_units)}"
+            for row in largest_rows.itertuples()
+        )
+    )
     return 0
 
 

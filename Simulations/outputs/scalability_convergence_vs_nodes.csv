@@ -1,0 +1,21 @@
+node_count,edge_count,protocol,failed_link,convergence_time_units,control_plane_rebuild_units,control_messages,estimated_packet_loss,details
+12,17,RIP,A1R1-A1R2,2,2,64,200,distance-vector update rounds
+12,17,OSPF,A1R1-A1R2,3,3,64,300,static link-state flood plus SPF work model
+12,17,IS-IS,A1R1-A1R2,3,3,34,300,hierarchical static link-state work model
+12,17,BGP,A1R1-A1R2,7,7,192,700,path-vector withdrawal and re-advertisement model
+12,17,ASHR,A1R1-A1R2,0,2,34,0,backup next-hop recovery; LSDB rebuild continues in control plane
+20,27,RIP,A1R1-A1R5,9,9,468,900,distance-vector update rounds
+20,27,OSPF,A1R1-A1R5,4,4,104,400,static link-state flood plus SPF work model
+20,27,IS-IS,A1R1-A1R5,3,3,54,300,hierarchical static link-state work model
+20,27,BGP,A1R1-A1R5,7,7,312,700,path-vector withdrawal and re-advertisement model
+20,27,ASHR,A1R1-A1R5,0,2,54,0,backup next-hop recovery; LSDB rebuild continues in control plane
+40,51,RIP,A1R1-A1R10,14,14,1400,1400,distance-vector update rounds
+40,51,OSPF,A1R1-A1R10,6,6,200,600,static link-state flood plus SPF work model
+40,51,IS-IS,A1R1-A1R10,5,5,102,500,hierarchical static link-state work model
+40,51,BGP,A1R1-A1R10,8,8,600,800,path-vector withdrawal and re-advertisement model
+40,51,ASHR,A1R1-A1R10,0,3,102,0,backup next-hop recovery; LSDB rebuild continues in control plane
+60,76,RIP,A1R1-A1R15,16,16,2400,1600,distance-vector update rounds
+60,76,OSPF,A1R1-A1R15,8,8,300,800,static link-state flood plus SPF work model
+60,76,IS-IS,A1R1-A1R15,6,6,152,600,hierarchical static link-state work model
+60,76,BGP,A1R1-A1R15,9,9,900,900,path-vector withdrawal and re-advertisement model
+60,76,ASHR,A1R1-A1R15,0,4,152,0,backup next-hop recovery; LSDB rebuild continues in control plane

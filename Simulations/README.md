@@ -138,6 +138,13 @@ Scenario E: Replay attack
 - A previously valid ASHR LSA is resent.
 - ASHR rejects the replayed message because the sequence number is stale.
 
+Scalability benchmark: Convergence time vs nodes
+
+- Generates deterministic hierarchical topologies with 12, 20, 40, and 60 routers.
+- Fails ASHR's current primary first-hop link for each topology size.
+- Records modeled convergence/recovery time for RIP, OSPF-style, IS-IS-style, BGP-style, and ASHR.
+- Also records control messages, estimated packet loss, failed link, and ASHR control-plane rebuild units.
+
 ## Output Files
 
 - `outputs/results_summary.csv`: Main quantitative scenario results.
@@ -149,6 +156,8 @@ Scenario E: Replay attack
 - `outputs/path_cost_comparison.png`: Protocol-specific path cost comparison.
 - `outputs/security_attack_comparison.png`: Whether each attack was accepted.
 - `outputs/routing_tables_before_after.csv`: Before/after paths for failure and congestion scenarios.
+- `outputs/scalability_convergence_vs_nodes.csv`: Convergence/recovery benchmark as node count grows.
+- `outputs/scalability_convergence_vs_nodes.png`: Scalability graph plotting convergence/recovery time against router count.
 
 ## Current Generated Results
 
@@ -164,6 +173,7 @@ From the latest run:
 - Congestion change: RIP, OSPF-style, IS-IS-style, and BGP-style paths did not change; ASHR triggered a metric update.
 - Fake update attack: RIP, OSPF-style, IS-IS-style, and BGP-style baselines accepted it; ASHR rejected spoofed and fake low-cost updates.
 - Replay attack: ASHR rejected the replayed message.
+- Scalability at 60 routers: RIP `16`, OSPF-style `8`, IS-IS-style `6`, BGP-style `9`, ASHR `0` modeled recovery time units. ASHR's control-plane rebuild continues in the background with `4` modeled units.
 
 ## Code Mapping to Requirements
 

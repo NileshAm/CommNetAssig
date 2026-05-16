@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from math import ceil, log2
 from pathlib import Path
 from typing import Any
 
@@ -12,13 +13,14 @@ from .bgp_baseline import BGPBaseline
 from .isis_baseline import ISISBaseline
 from .metrics import compute_metric_ranges, path_cost
 from .ospf_baseline import OSPFBaseline
-from .plotting import plot_bar, plot_path_cost, plot_topology
+from .plotting import plot_bar, plot_path_cost, plot_scalability_convergence, plot_topology
 from .rip_baseline import RIPBaseline
-from .topology import create_hierarchical_topology
+from .topology import create_hierarchical_topology, create_scalable_hierarchical_topology
 from .utils import ensure_dir, path_to_string, set_deterministic_seed, write_lines
 
 
 PACKETS_PER_TIME_UNIT = 100
+SCALABILITY_NODE_COUNTS = [12, 20, 40, 60]
 
 
 def _summary_row(scenario: str, protocol: str, metric: str, value: object, details: str = "") -> dict[str, object]:
@@ -351,6 +353,112 @@ def scenario_e_replay_attack(log: list[str]) -> dict[str, Any]:
     }
 
 
+def _spf_work_units(node_count: int, edge_count: int, divisor: float) -> int:
+    work = edge_count + node_count * log2(max(node_count, 2))
+    return max(1, ceil(work / divisor))
+
+
+def run_scalability_benchmark(node_counts: list[int] | None = None) -> pd.DataFrame:
+    """Benchmark modeled convergence/recovery time as topology size grows."""
+    rows: list[dict[str, object]] = []
+    for node_count in node_counts or SCALABILITY_NODE_COUNTS:
+        base_graph = create_scalable_hierarchical_topology(node_count)
+        source = str(base_graph.graph["source"])
+        destination = str(base_graph.graph["destination"])
+        edge_count = base_graph.number_of_edges()
+
+        ashr = ASHRProtocol(base_graph.copy())
+        primary_path = ashr.get_route(source, destination)["path"]
+        fail_u, fail_v = primary_path[0], primary_path[1]
+        failed_link = f"{fail_u}-{fail_v}"
+
+        rip = RIPBaseline(create_scalable_hierarchical_topology(node_count))
+        rip.run_until_converged(max_rounds=max(50, node_count * 2), reset=True)
+        rip_result = rip.apply_link_failure(fail_u, fail_v, max_rounds=max(50, node_count * 2))
+        rows.append(
+            {
+                "node_count": node_count,
+                "edge_count": edge_count,
+                "protocol": "RIP",
+                "failed_link": failed_link,
+                "convergence_time_units": rip_result.rounds,
+                "control_plane_rebuild_units": rip_result.rounds,
+                "control_messages": rip_result.control_messages,
+                "estimated_packet_loss": rip_result.rounds * PACKETS_PER_TIME_UNIT,
+                "details": "distance-vector update rounds",
+            }
+        )
+
+        ospf = OSPFBaseline(create_scalable_hierarchical_topology(node_count))
+        ospf_result = ospf.apply_link_failure(fail_u, fail_v)
+        ospf_time = ospf_result.convergence_time + _spf_work_units(node_count, edge_count, divisor=80)
+        rows.append(
+            {
+                "node_count": node_count,
+                "edge_count": edge_count,
+                "protocol": "OSPF",
+                "failed_link": failed_link,
+                "convergence_time_units": ospf_time,
+                "control_plane_rebuild_units": ospf_time,
+                "control_messages": ospf_result.control_messages,
+                "estimated_packet_loss": ospf_time * PACKETS_PER_TIME_UNIT,
+                "details": "static link-state flood plus SPF work model",
+            }
+        )
+
+        isis = ISISBaseline(create_scalable_hierarchical_topology(node_count))
+        isis_result = isis.apply_link_failure(fail_u, fail_v)
+        isis_time = isis_result.convergence_time + _spf_work_units(node_count, edge_count, divisor=130)
+        rows.append(
+            {
+                "node_count": node_count,
+                "edge_count": edge_count,
+                "protocol": "IS-IS",
+                "failed_link": failed_link,
+                "convergence_time_units": isis_time,
+                "control_plane_rebuild_units": isis_time,
+                "control_messages": isis_result.control_messages,
+                "estimated_packet_loss": isis_time * PACKETS_PER_TIME_UNIT,
+                "details": "hierarchical static link-state work model",
+            }
+        )
+
+        bgp = BGPBaseline(create_scalable_hierarchical_topology(node_count))
+        bgp_result = bgp.apply_link_failure(fail_u, fail_v)
+        bgp_time = bgp_result.convergence_time + ceil(node_count / 20)
+        rows.append(
+            {
+                "node_count": node_count,
+                "edge_count": edge_count,
+                "protocol": "BGP",
+                "failed_link": failed_link,
+                "convergence_time_units": bgp_time,
+                "control_plane_rebuild_units": bgp_time,
+                "control_messages": bgp_result.control_messages,
+                "estimated_packet_loss": bgp_time * PACKETS_PER_TIME_UNIT,
+                "details": "path-vector withdrawal and re-advertisement model",
+            }
+        )
+
+        ashr_result = ashr.apply_link_failure(fail_u, fail_v, source, destination)
+        ashr_control_rebuild = 1 + _spf_work_units(node_count, edge_count, divisor=170)
+        rows.append(
+            {
+                "node_count": node_count,
+                "edge_count": edge_count,
+                "protocol": "ASHR",
+                "failed_link": failed_link,
+                "convergence_time_units": ashr_result["recovery_time_units"],
+                "control_plane_rebuild_units": ashr_control_rebuild,
+                "control_messages": ashr_result["control_messages"],
+                "estimated_packet_loss": ashr_result["recovery_time_units"] * PACKETS_PER_TIME_UNIT,
+                "details": "backup next-hop recovery; LSDB rebuild continues in control plane",
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
 def _write_results_summary(output_dir: Path, scenarios: dict[str, Any]) -> pd.DataFrame:
     rows = [
         _summary_row("A_Normal_Routing", "RIP", "path", path_to_string(scenarios["A"]["rip_path"])),
@@ -446,7 +554,7 @@ def _write_routing_tables(output_dir: Path, scenarios: dict[str, Any]) -> pd.Dat
     return df
 
 
-def _generate_plots(output_dir: Path, scenarios: dict[str, Any]) -> list[Path]:
+def _generate_plots(output_dir: Path, scenarios: dict[str, Any], scalability_df: pd.DataFrame) -> list[Path]:
     paths = [plot_topology(create_hierarchical_topology(), output_dir)]
     paths.append(
         plot_bar(
@@ -531,6 +639,7 @@ def _generate_plots(output_dir: Path, scenarios: dict[str, Any]) -> list[Path]:
             filename="security_attack_comparison.png",
         )
     )
+    paths.append(plot_scalability_convergence(scalability_df.to_dict("records"), output_dir))
     return paths
 
 
@@ -546,10 +655,20 @@ def run_full_simulation(output_dir: str | Path = "outputs") -> dict[str, Any]:
         "D": scenario_d_fake_update_attack(log),
         "E": scenario_e_replay_attack(log),
     }
+    scalability_df = run_scalability_benchmark()
+    scalability_df.to_csv(output_dir / "scalability_convergence_vs_nodes.csv", index=False)
+    log.append("")
+    log.append("Scalability benchmark - convergence/recovery time vs node count")
+    for row in scalability_df.to_dict("records"):
+        log.append(
+            f"{row['protocol']} nodes={row['node_count']}: "
+            f"time={row['convergence_time_units']}, control_rebuild={row['control_plane_rebuild_units']}, "
+            f"failed_link={row['failed_link']}"
+        )
 
     results_df = _write_results_summary(output_dir, scenarios)
     routing_df = _write_routing_tables(output_dir, scenarios)
-    plot_paths = _generate_plots(output_dir, scenarios)
+    plot_paths = _generate_plots(output_dir, scenarios, scalability_df)
     write_lines(output_dir / "simulation_log.txt", log)
 
     return {
@@ -557,6 +676,7 @@ def run_full_simulation(output_dir: str | Path = "outputs") -> dict[str, Any]:
         "scenarios": scenarios,
         "results_summary": results_df,
         "routing_tables": routing_df,
+        "scalability": scalability_df,
         "plots": plot_paths,
         "log": log,
     }

@@ -15,6 +15,8 @@ REQUIRED_OUTPUTS = {
     "path_cost_comparison.png",
     "security_attack_comparison.png",
     "routing_tables_before_after.csv",
+    "scalability_convergence_vs_nodes.csv",
+    "scalability_convergence_vs_nodes.png",
 }
 
 
@@ -25,6 +27,7 @@ def test_link_failure_scenario_generates_output_files(tmp_path):
     assert REQUIRED_OUTPUTS.issubset(generated)
     assert result["scenarios"]["B"]["ashr_used_backup"]
     assert result["scenarios"]["B"]["rip_rounds"] > result["scenarios"]["B"]["ashr_recovery_time_units"]
+    assert {"RIP", "OSPF", "IS-IS", "BGP", "ASHR"}.issubset(set(result["scalability"]["protocol"]))
 
 
 def test_run_all_completes_without_crashing():

@@ -40,6 +40,10 @@ The following values come from the generated `outputs/results_summary.csv`.
 | Replay attack | ASHR | First message accepted | True |
 | Replay attack | ASHR | Replayed message accepted | False |
 
+## Scalability Benchmark
+
+The scalability benchmark generated hierarchical topologies with 12, 20, 40, and 60 routers and failed the primary first-hop link for the tested source-destination pair. The largest generated topology had 60 routers and 76 links. At 60 routers, the modeled convergence/recovery times were RIP 16, OSPF-style 8, IS-IS-style 6, BGP-style 9, and ASHR 0 time units. ASHR also recorded a separate control-plane rebuild estimate of 4 time units, meaning forwarding recovered immediately through the backup next hop while link-state database repair continued in the background.
+
 ## Link Failure Result
 
 When the primary-path link `R3-ABR1` failed, the RIP-style baseline required 5 update rounds to converge, while the OSPF-style and IS-IS-style baselines recovered in 2 modeled time units. The BGP-style baseline required 6 time units because path-vector withdrawals and re-advertisements are modeled as slower. With the packet-loss estimate of 100 packets per time unit, the estimated losses were RIP 500 packets, OSPF-style 200 packets, IS-IS-style 200 packets, BGP-style 600 packets, and ASHR 0 packets. ASHR had already computed a backup path from R1 to R10, so it switched immediately to `R1 -> R4 -> R5 -> R6 -> ABR2 -> R8 -> R10`.

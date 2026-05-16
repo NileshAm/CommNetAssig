@@ -174,6 +174,8 @@ ASHR uses hierarchy to reduce the amount of topology information that must be co
 
 The event-driven update model also improves efficiency because ASHR does not periodically flood full tables like RIP. It sends updates when a failure occurs or when the metric damping threshold is crossed.
 
+The simulator includes a convergence-time-vs-node-count benchmark using generated hierarchical topologies with 12, 20, 40, and 60 routers. ASHR reports immediate data-plane recovery when a backup next hop is available, while a separate control-plane rebuild value records the modeled LSDB/SPF work that continues after forwarding has recovered.
+
 ## Limitations and Future Work
 
 - The simulator does not implement real packet forwarding, sockets, or router daemons.
