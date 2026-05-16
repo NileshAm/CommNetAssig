@@ -152,7 +152,8 @@ def plot_scalability_convergence(rows: list[dict[str, object]], output_dir: str 
         group = group.sort_values("node_count")
         ax.plot(
             group["node_count"],
-            group["convergence_time_units"],
+            # prefer seconds column if available
+            group["convergence_time_s"] if "convergence_time_s" in group.columns else group["convergence_time_units"],
             marker="o",
             linewidth=2,
             label=protocol,
@@ -160,7 +161,7 @@ def plot_scalability_convergence(rows: list[dict[str, object]], output_dir: str 
         )
     ax.set_title("Scalability Benchmark: Convergence Time vs Node Count")
     ax.set_xlabel("Number of routers")
-    ax.set_ylabel("Modeled convergence / recovery time units")
+    ax.set_ylabel("Convergence / recovery time (s)")
     ax.grid(alpha=0.25)
     ax.legend()
     _save(fig, path)

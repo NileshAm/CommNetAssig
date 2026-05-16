@@ -38,23 +38,23 @@ First ASHR message: accepted=True, reason=accepted
 Replayed ASHR message: accepted=False, reason=replayed or stale sequence number
 
 Scalability benchmark - convergence/recovery time vs node count
-RIP nodes=12: time=2, control_rebuild=2, failed_link=A1R1-A1R2
-OSPF nodes=12: time=3, control_rebuild=3, failed_link=A1R1-A1R2
-IS-IS nodes=12: time=3, control_rebuild=3, failed_link=A1R1-A1R2
-BGP nodes=12: time=7, control_rebuild=7, failed_link=A1R1-A1R2
-ASHR nodes=12: time=1, control_rebuild=2, failed_link=A1R1-A1R2
-RIP nodes=20: time=9, control_rebuild=9, failed_link=A1R1-A1R5
-OSPF nodes=20: time=4, control_rebuild=4, failed_link=A1R1-A1R5
-IS-IS nodes=20: time=3, control_rebuild=3, failed_link=A1R1-A1R5
-BGP nodes=20: time=7, control_rebuild=7, failed_link=A1R1-A1R5
-ASHR nodes=20: time=1, control_rebuild=2, failed_link=A1R1-A1R5
-RIP nodes=40: time=14, control_rebuild=14, failed_link=A1R1-A1R10
-OSPF nodes=40: time=6, control_rebuild=6, failed_link=A1R1-A1R10
-IS-IS nodes=40: time=5, control_rebuild=5, failed_link=A1R1-A1R10
-BGP nodes=40: time=8, control_rebuild=8, failed_link=A1R1-A1R10
-ASHR nodes=40: time=1, control_rebuild=3, failed_link=A1R1-A1R10
-RIP nodes=60: time=16, control_rebuild=16, failed_link=A1R1-A1R15
-OSPF nodes=60: time=8, control_rebuild=8, failed_link=A1R1-A1R15
-IS-IS nodes=60: time=6, control_rebuild=6, failed_link=A1R1-A1R15
-BGP nodes=60: time=9, control_rebuild=9, failed_link=A1R1-A1R15
-ASHR nodes=60: time=1, control_rebuild=4, failed_link=A1R1-A1R15
+RIP nodes=12: time=2.0, control_rebuild=2, failed_link=A1R1-A1R2
+OSPF nodes=12: time=3.0, control_rebuild=3, failed_link=A1R1-A1R2
+IS-IS nodes=12: time=3.0, control_rebuild=3, failed_link=A1R1-A1R2
+BGP nodes=12: time=7.0, control_rebuild=7, failed_link=A1R1-A1R2
+ASHR nodes=12: time=1.089624062518029, control_rebuild=2, failed_link=A1R1-A1R2
+RIP nodes=20: time=9.0, control_rebuild=9, failed_link=A1R1-A1R5
+OSPF nodes=20: time=4.0, control_rebuild=4, failed_link=A1R1-A1R5
+IS-IS nodes=20: time=3.0, control_rebuild=3, failed_link=A1R1-A1R5
+BGP nodes=20: time=7.0, control_rebuild=7, failed_link=A1R1-A1R5
+ASHR nodes=20: time=1.108048202372184, control_rebuild=2, failed_link=A1R1-A1R5
+RIP nodes=40: time=14.0, control_rebuild=14, failed_link=A1R1-A1R10
+OSPF nodes=40: time=6.0, control_rebuild=6, failed_link=A1R1-A1R10
+IS-IS nodes=40: time=5.0, control_rebuild=5, failed_link=A1R1-A1R10
+BGP nodes=40: time=8.0, control_rebuild=8, failed_link=A1R1-A1R10
+ASHR nodes=40: time=1.133048202372184, control_rebuild=3, failed_link=A1R1-A1R10
+RIP nodes=60: time=16.0, control_rebuild=16, failed_link=A1R1-A1R15
+OSPF nodes=60: time=8.0, control_rebuild=8, failed_link=A1R1-A1R15
+IS-IS nodes=60: time=6.0, control_rebuild=6, failed_link=A1R1-A1R15
+BGP nodes=60: time=9.0, control_rebuild=9, failed_link=A1R1-A1R15
+ASHR nodes=60: time=1.147672264890213, control_rebuild=4, failed_link=A1R1-A1R15

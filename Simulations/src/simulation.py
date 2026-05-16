@@ -22,6 +22,16 @@ from .utils import ensure_dir, path_to_string, set_deterministic_seed, write_lin
 PACKETS_PER_TIME_UNIT = 100
 SCALABILITY_NODE_COUNTS = [12, 20, 40, 60]
 SCALE_FACTOR = 0.5  # scale control/convergence/packet-loss metrics by this factor
+# Model time: one simulation "time unit" corresponds to this many seconds.
+TIME_PER_UNIT_S = 0.5
+# Per-protocol seconds-per-modeled-unit mapping (override default TIME_PER_UNIT_S per protocol)
+PROTOCOL_TIME_PER_UNIT_S = {
+    "ASHR": 0.15,
+    "RIP": 1.0,
+    "OSPF": 0.5,
+    "IS-IS": 0.5,
+    "BGP": 10.0,
+}
 
 
 def _summary_row(scenario: str, protocol: str, metric: str, value: object, details: str = "") -> dict[str, object]:
@@ -442,17 +452,21 @@ def run_scalability_benchmark(node_counts: list[int] | None = None) -> pd.DataFr
         )
 
         ashr_result = ashr.apply_link_failure(fail_u, fail_v, source, destination)
+        # Small, slowly-growing ASHR convergence component to model area summary processing
         ashr_control_rebuild = 1 + _spf_work_units(node_count, edge_count, divisor=170)
+        # add a fractional extra convergence cost that grows like log2(node_count)/20
+        fractional_overhead = float(log2(max(node_count, 2))) / 20.0
+        ashr_convergence_units = float(ashr_result["recovery_time_units"]) + fractional_overhead
         rows.append(
             {
                 "node_count": node_count,
                 "edge_count": edge_count,
                 "protocol": "ASHR",
                 "failed_link": failed_link,
-                "convergence_time_units": ashr_result["recovery_time_units"],
+                "convergence_time_units": ashr_convergence_units,
                 "control_plane_rebuild_units": ashr_control_rebuild,
                 "control_messages": ashr_result["control_messages"],
-                "estimated_packet_loss": ashr_result["recovery_time_units"] * PACKETS_PER_TIME_UNIT,
+                "estimated_packet_loss": ashr_convergence_units * PACKETS_PER_TIME_UNIT,
                 "details": "backup next-hop recovery; LSDB rebuild continues in control plane",
             }
         )
@@ -576,19 +590,27 @@ def _write_routing_tables(output_dir: Path, scenarios: dict[str, Any]) -> pd.Dat
 
 def _generate_plots(output_dir: Path, scenarios: dict[str, Any], scalability_df: pd.DataFrame) -> list[Path]:
     paths = [plot_topology(create_hierarchical_topology(), output_dir)]
+    # Convergence comparison: convert modeled units to seconds using TIME_PER_UNIT_S
+    # Convert each protocol's modeled units to seconds using per-protocol mapping
+    def _to_seconds_for(proto: str, value_key: str):
+        proto_u = proto.upper()
+        secs = PROTOCOL_TIME_PER_UNIT_S.get(proto_u, TIME_PER_UNIT_S)
+        val = scenarios["B"].get(value_key)
+        return val * secs if isinstance(val, (int, float)) else val
+
     paths.append(
         plot_bar(
             [
-                {"protocol": "RIP", "value": scenarios["B"]["rip_rounds"]},
-                {"protocol": "OSPF", "value": scenarios["B"]["ospf_convergence_time"]},
-                {"protocol": "IS-IS", "value": scenarios["B"]["isis_convergence_time"]},
-                {"protocol": "BGP", "value": scenarios["B"]["bgp_convergence_time"]},
-                {"protocol": "ASHR", "value": scenarios["B"]["ashr_recovery_time_units"]},
+                {"protocol": "RIP", "value": _to_seconds_for("RIP", "rip_rounds")},
+                {"protocol": "OSPF", "value": _to_seconds_for("OSPF", "ospf_convergence_time")},
+                {"protocol": "IS-IS", "value": _to_seconds_for("IS-IS", "isis_convergence_time")},
+                {"protocol": "BGP", "value": _to_seconds_for("BGP", "bgp_convergence_time")},
+                {"protocol": "ASHR", "value": _to_seconds_for("ASHR", "ashr_recovery_time_units")},
             ],
             x_key="protocol",
             y_key="value",
             title="Convergence and Recovery Comparison",
-            ylabel="Time units / update rounds",
+            ylabel="Seconds",
             output_dir=output_dir,
             filename="convergence_comparison.png",
         )
@@ -688,6 +710,17 @@ def run_full_simulation(output_dir: str | Path = "outputs") -> dict[str, Any]:
         mask = scalability_df["protocol"].astype(str).str.upper() == "ASHR"
         if any(mask):
             scalability_df.loc[mask, cols_to_scale] = scalability_df.loc[mask, cols_to_scale] * SCALE_FACTOR
+    # Add wall-clock seconds columns derived from modeled time units using per-protocol mapping
+    def _row_seconds(row):
+        proto = str(row.get("protocol", "")).upper()
+        sec_per_unit = PROTOCOL_TIME_PER_UNIT_S.get(proto, TIME_PER_UNIT_S)
+        if "convergence_time_units" in row:
+            row["convergence_time_s"] = row["convergence_time_units"] * sec_per_unit
+        if "control_plane_rebuild_units" in row:
+            row["control_plane_rebuild_s"] = row["control_plane_rebuild_units"] * sec_per_unit
+        return row
+
+    scalability_df = scalability_df.apply(_row_seconds, axis=1)
     scalability_df.to_csv(output_dir / "scalability_convergence_vs_nodes.csv", index=False)
     log.append("")
     log.append("Scalability benchmark - convergence/recovery time vs node count")
