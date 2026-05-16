@@ -1,0 +1,38 @@
+ASHR Protocol Simulation Log
+Deterministic seed: 2150
+
+Scenario A - Normal routing
+RIP path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 (hops=6)
+OSPF-style path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 (static cost=27.8056)
+IS-IS-style path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 (configured metric=8.7000)
+BGP-style path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 (AS-path length=6)
+ASHR path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 (cost=2.2297)
+
+Scenario B - Link failure R3-ABR1
+RIP before: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
+RIP after: R1 -> R2 -> R3 -> R6 -> ABR2 -> R8 -> R10; convergence rounds=5
+OSPF-style after: R1 -> R2 -> R3 -> R6 -> ABR2 -> R8 -> R10; convergence time=2
+IS-IS-style after: R1 -> R2 -> R5 -> R6 -> ABR2 -> R8 -> R10; convergence time=2
+BGP-style after: R1 -> R2 -> R3 -> R6 -> ABR2 -> R8 -> R10; convergence time=6
+ASHR primary before: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
+ASHR backup before: R1 -> R4 -> R5 -> R6 -> ABR2 -> R8 -> R10
+ASHR after: R1 -> R4 -> R5 -> R6 -> ABR2 -> R8 -> R10; used_backup=True; recovery_time_units=0
+
+Scenario C - Congestion-driven metric change on ABR1-ABR2
+RIP before/after path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 / R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
+OSPF-style before/after path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 / R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
+IS-IS-style before/after path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 / R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
+BGP-style before/after path: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 / R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
+ASHR before: R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10 cost=2.2297; after: R1 -> R2 -> R3 -> R6 -> ABR2 -> R8 -> R10 cost=2.1031; triggered_update=True
+
+Scenario D - Fake low-cost update attack
+RIP accepted=True; before_distance=6; after_distance=1; after_path=R1 -> R2 -> R3 -> ABR1 -> ABR2 -> R8 -> R10
+OSPF-style accepted=True; cost 27.8056 -> 0.0000
+IS-IS-style accepted=True; cost 8.7000 -> 0.0000
+BGP-style accepted=True; path length 6 -> 1
+ASHR spoofed result: accepted=False, reason=sender is not a trusted neighbor
+ASHR low-cost result: accepted=False, reason=fake low-cost route rejected
+
+Scenario E - Replay attack
+First ASHR message: accepted=True, reason=accepted
+Replayed ASHR message: accepted=False, reason=replayed or stale sequence number
