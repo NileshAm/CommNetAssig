@@ -102,6 +102,24 @@ def plot_bar(
     ax.set_ylabel(ylabel)
     ax.set_xlabel("")
     ax.grid(axis="y", alpha=0.25)
+    # Ensure zero values are shown and annotate bar heights for clarity.
+    ax.set_ylim(bottom=0)
+    for rect in ax.patches:
+        height = rect.get_height()
+        # Format integers without decimal, floats with up to 2 decimals
+        if abs(height - round(height)) < 1e-9:
+            label = f"{int(round(height))}"
+        else:
+            label = f"{height:.2f}"
+        ax.annotate(
+            label,
+            xy=(rect.get_x() + rect.get_width() / 2, height),
+            xytext=(0, 3),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
     _save(fig, path)
     return path
 
