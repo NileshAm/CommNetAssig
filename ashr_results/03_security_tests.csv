@@ -1,6 +1,0 @@
-test,accepted_by_ashr,reason
-Valid neighbor update,True,valid
-Replay old R2 update,False,replay/stale sequence number
-Spoofed non-neighbor update,False,sender is not a valid neighbor; unknown sender key
-Tampered route hijack,False,authentication hash failed
-Same fake route in RIP baseline,N/A,"RIP baseline has no HMAC/sequence validation, so a lower false metric can be accepted in this model"

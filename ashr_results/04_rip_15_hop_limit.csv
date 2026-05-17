@@ -1,3 +1,0 @@
-protocol,topology,total_source_destination_routes,unreachable_routes,reason
-RIP baseline,20-router linear chain,380,20,"RIP metric 16 means infinity, so routes longer than 15 hops fail"
-ASHR proposed,20-router linear chain,380,0,Dijkstra path computation has no 15-hop routing limit in this simulation

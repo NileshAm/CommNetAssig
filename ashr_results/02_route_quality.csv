@@ -1,4 +1,0 @@
-case,hops,latency_ms,min_bandwidth_mbps,packet_loss,ashr_cost
-ASHR primary before failure,3,6.0,100.0,0.014925124999999984,0.75
-ASHR stored backup before failure,4,17.0,60.0,0.049106733125000024,2.2954545454545454
-ASHR route after failure,4,18.0,45.0,0.04432886749999998,2.1818181818181817

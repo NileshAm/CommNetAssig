@@ -1,6 +1,0 @@
-routers,links,failed_link,rip_convergence_rounds_after_failure,ashr_recomputed_routes_after_failure,rip_control_messages_after_failure,ashr_event_control_messages_after_failure,rip_unreachable_routes_after_failure,ashr_loops_detected_after_failure,rip_loops_detected_during_convergence,avg_rip_table_size_per_router,avg_ashr_table_size_per_router,ashr_compute_time_s,rip_convergence_time_s,ashr_estimated_pdr_percent,invalid_messages_detected_by_ashr
-10,14,R3-R4,3,0,78,6,0,0,0,9,5.0,0.00689609999244567,0.0017127999890362844,94.9865889705806,3
-20,28,R10-R12,6,0,324,7,0,0,16,19,7.0,0.019878400009474717,0.019710900000063702,92.08768752050534,3
-50,70,R26-R46,11,0,1518,6,0,0,511,49,12.88,0.3888050999958068,0.057530099991708994,91.87220556784567,3
-100,140,R68-R85,11,0,3058,5,0,0,555,99,18.0,0.5673383999965154,0.3741704000130994,89.24296238650577,3
-200,280,R78-R189,11,0,6138,6,0,0,3806,199,26.8,4.59554599999683,1.6055111999885412,92.20560788328058,3
